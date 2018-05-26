@@ -9,8 +9,8 @@ def string_to_latlon(inp):
 def latlon_to_coords(lat, lon):
 	lat0, lon0 = 19.4308, -99.1597
 	R=6371000
-	x = R*(np.radians(lat-lat0))
-	y = R*(np.radians(lon-lon0))*np.cos(np.radians(lat)+np.radians(lat0)/2)
+	y = R*(np.radians(lat-lat0))
+	x = R*(np.radians(lon-lon0))*np.cos(np.radians(lat)+np.radians(lat0)/2)
 	return (x,y)
 
 def dist(pt1, pt2):
