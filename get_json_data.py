@@ -10,7 +10,7 @@ import os
 year = 2018
 month = 5
 day=datetime.today().day
-first_day = day
+first_day = day+2
 folder = ""
 template = "An exception of type {0} occurred. Arguments:\n{1!r}"
 
@@ -35,7 +35,7 @@ url = 'https://traffic.cit.api.here.com/traffic/6.2/flow.json'
 query = {
 	# 19.4308, -99.1597 coordinates of Reforma-Insurgientes
 	"prox": "19.4308, -99.1597, 3000",
-	"app_id": f.readline(),
+	"app_id": f.readline()[0:-1],
 	"app_code": f.readline(),
 	"units": "metric",
 	"maxfunctionalclass": 4,
@@ -121,9 +121,9 @@ def sample(index):
 		main_loop()
 
 
-while day < first_day+7:
+while day < first_day+1:
 	for i in range(4):
-		if day != first_day or i > 0:
+		if True:
 			folder = start_times[i].strftime("%Y-%m-%dT%H.%M")
 			if not os.path.exists(folder):
 				os.makedirs(folder)
