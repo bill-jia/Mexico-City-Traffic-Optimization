@@ -2,30 +2,37 @@ import numpy as np
 import pandas as pd
 
 
-def string_to_latlon(input):
-	spl = input.split(",")
+def string_to_latlon(inp):
+	spl = inp.split(",")
 	return (float(spl[0]), float(spl[1]))
 
 def latlon_to_coords(lat, lon):
-	lat0 = 19.4308
-	lon0 = -99.1597
+	lat0, lon0 = 19.4308, -99.1597
 	R=6371000
-	x = R*(lat-lat0)
-	y = R*(lon-lon0)*np.cos((lat+lat0)/2)
+	x = R*(np.radians(lat-lat0))
+	y = R*(np.radians(lon-lon0))*np.cos(np.radians(lat)+np.radians(lat0)/2)
 	return (x,y)
 
-def string_to_coords(input):
-	(lat, lon) = string_to_latlon(input)
-	return latlon_to_coords()
+def dist(pt1, pt2):
+	x1, y1 = pt1
+	x2, y2 = pt2
+	return np.sqrt((x2-x1)**2 + (y2-y1)**2)
 
-def path_to_coords(input):
-	splt = input.split(" ")
+def string_to_coords(inp):
+	(lat, lon) = string_to_latlon(inp)
+	return latlon_to_coords(lat, lon)
+
+def path_to_coords(inp):
+	splt = inp.split(" ")
 	output = []
 	for dat in splt[1:]:
 		output.append(string_to_coords(dat))
 	return output
 
 def prep_data(df):
-	df["start_point"].apply(string_to_coords)
-	df["end_point"].apply(string_to_coords)
-	df["path"].apply(path_to_coords)
+	data = df.to_dict('records')
+	for entry in data:
+		entry["start_point"] = string_to_coords((entry["start_point"]))
+		entry["end_point"] = string_to_coords((entry["end_point"]))
+		entry["path"] = path_to_coords((entry["path"]))
+	return data
