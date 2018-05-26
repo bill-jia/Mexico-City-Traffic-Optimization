@@ -65,7 +65,7 @@ def merge_vertices(intersections):
 						if d < min_dist:
 							min_dist = d
 							v1new = v2
-		if min_dist < 30:
+		if min_dist < 100:
 			# print(v1)
 			# print(v1new)
 			old_out_edges = g.get_out_edges(v1)
@@ -112,5 +112,5 @@ ax2 = fig2.add_subplot(1,1,1)
 for edge in g.edges():
 	start = g.vp.coords[edge.source()][0]
 	end = g.vp.coords[edge.target()][0]
-	ax2.plot([start[0], end[0]], [start[1], end[1]], 'ro-')
+	ax2.plot([start[0], end[0]], [start[1], end[1]], 'bo-')
 plt.show(block=True)
