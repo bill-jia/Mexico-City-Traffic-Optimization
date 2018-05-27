@@ -10,14 +10,16 @@ class TrafficGraph(Graph):
 		Graph.__init__(self)
 
 
-
-		self.coordinates = self.new_vertex_property("object")
+		self.temp_coords = self.new_vertex_property("object")
+		self.coordinates = self.new_vertex_property("vector<float>")
+		self.is_master_node = self.new_vertex_property("bool")
 		self.path = self.new_edge_property("string")
 		self.functional_class = self.new_edge_property("int")
 		self.length = self.new_edge_property("float")
 		self.freeflow_speed = self.new_edge_property("float")
 		self.actual_speed = self.new_edge_property("float")
 		self.jam_factor = self.new_edge_property("float")
+		self.is_master_edge = self.new_edge_property("bool")
 
 
 		# self.vertex_ids = {}
@@ -27,6 +29,7 @@ class TrafficGraph(Graph):
 			end_point = self.__entry_to_vertex(row["end_point"])
 			if int(start_point) != int(end_point):
 				e = self.add_edge(start_point, end_point)
+				self.is_master_edge[e] = False
 			self.path[e] = row["path"]
 			self.functional_class[e] = row["functional_class"]
 			self.length[e] = row["length"]
@@ -37,10 +40,11 @@ class TrafficGraph(Graph):
 		self.__select_largest_subgraph()
 
 	def __entry_to_vertex(self, point):
-		v_ref = find_vertex(self, self.coordinates, [point])
+		v_ref = find_vertex(self, self.temp_coords, [point])
 		if len(v_ref) == 0:
 			v_new = self.add_vertex()
-			self.coordinates[v_new] = [point]
+			self.is_master_node[v_new] = False
+			self.temp_coords[v_new] = [point]
 			return v_new
 		else:
 			return v_ref[0]
@@ -51,24 +55,24 @@ class TrafficGraph(Graph):
 		for coords in coords_list:
 			xs.append(coords[0])
 			ys.append(coords[1])
-		return [(np.mean(xs), np.mean(ys))]
+		return [np.mean(xs), np.mean(ys)]
 
 	def __set_new_coords(self):
 		vertex_list = self.get_vertices()
 		for v in vertex_list:
-			self.coordinates[v] = self.__average_coords(self.coordinates[v])
+			self.coordinates[v] = self.__average_coords(self.temp_coords[v])
 
 	def __merge_vertices(self):
 		vertex_list = self.get_vertices()
 		removed_vertex_list = set()
 		self_loop_count = 0
 		for v1 in vertex_list:
-			v1coords_pool = self.coordinates[v1]
+			v1coords_pool = self.temp_coords[v1]
 			min_dist = 9999
 			v1new = None
 			for v2 in vertex_list:
 				if v2!=v1 and v2 not in removed_vertex_list and self.edge(v1, v2) is None and self.edge(v2, v1) is None:
-					v2coords_pool = self.coordinates[v2]
+					v2coords_pool = self.temp_coords[v2]
 					for v1coords in v1coords_pool:
 						for v2coords in v2coords_pool:
 							# print(v1coords)
@@ -83,14 +87,16 @@ class TrafficGraph(Graph):
 				old_out_edges = self.get_out_edges(v1)
 				for old_out_edge in old_out_edges:
 					oe = self.edge(old_out_edge[0], old_out_edge[1])
-					self.add_edge(v1new, oe.target())
+					ne = self.add_edge(v1new, oe.target())
+					self.is_master_edge[ne] = False
 					self.remove_edge(oe)
 				old_in_edges = self.get_in_edges(v1)
 				for old_in_edge in old_in_edges:
 					oe = self.edge(old_in_edge[0], old_in_edge[1])
-					self.add_edge(oe.source(), v1new)
+					ne = self.add_edge(oe.source(), v1new)
+					self.is_master_edge[ne] = False
 					self.remove_edge(oe)
-				self.coordinates[v1new].extend(self.coordinates[v1])
+				self.temp_coords[v1new].extend(self.temp_coords[v1])
 				removed_vertex_list |= set([v1])
 		self.remove_vertex(removed_vertex_list)
 		self.shrink_to_fit()
