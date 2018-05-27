@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 
 def string_to_latlon(inp):
@@ -36,3 +37,16 @@ def prep_data(df):
 		entry["end_point"] = string_to_coords((entry["end_point"]))
 		entry["path"] = path_to_coords((entry["path"]))
 	return data
+
+def plot_graph_as_map(g):
+	fig = plt.figure()
+	ax2 = fig.add_subplot(1,1,1)
+	for edge in g.edges():
+		start = g.coordinates[edge.source()][0]
+		end = g.coordinates[edge.target()][0]
+		ax2.plot([start[0], end[0]], [start[1], end[1]], 'bo', markersize=6)
+		if np.sqrt((end[0]-start[0])**2 + (end[1]-start[1])**2) > 0:
+			ax2.arrow(start[0], start[1], end[0]-start[0], end[1]-start[1], width=10, head_width = 100, length_includes_head=True)
+
+
+	plt.show(block=True)
