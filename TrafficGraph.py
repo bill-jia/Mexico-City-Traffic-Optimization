@@ -25,7 +25,8 @@ class TrafficGraph(Graph):
 		for row in data:
 			start_point = self.__entry_to_vertex(row["start_point"])
 			end_point = self.__entry_to_vertex(row["end_point"])
-			e = self.add_edge(start_point, end_point)
+			if int(start_point) != int(end_point):
+				e = self.add_edge(start_point, end_point)
 			self.path[e] = row["path"]
 			self.functional_class[e] = row["functional_class"]
 			self.length[e] = row["length"]
@@ -60,12 +61,13 @@ class TrafficGraph(Graph):
 	def __merge_vertices(self):
 		vertex_list = self.get_vertices()
 		removed_vertex_list = set()
+		self_loop_count = 0
 		for v1 in vertex_list:
 			v1coords_pool = self.coordinates[v1]
 			min_dist = 9999
 			v1new = None
 			for v2 in vertex_list:
-				if v2!=v1 and v2 not in removed_vertex_list:
+				if v2!=v1 and v2 not in removed_vertex_list and self.edge(v1, v2) is None and self.edge(v2, v1) is None:
 					v2coords_pool = self.coordinates[v2]
 					for v1coords in v1coords_pool:
 						for v2coords in v2coords_pool:
@@ -98,7 +100,7 @@ class TrafficGraph(Graph):
 		if vertex is not None:
 			graph = [vertex]
 			graph_size = 1
-			neighbours = chain(vertex.out_neighbors(), vertex.in_neighbors())
+			neighbours = vertex.all_neighbors()
 			for vertex_neighbour in neighbours:
 				if vertex_neighbour not in visited:
 					visited.append(vertex_neighbour)
