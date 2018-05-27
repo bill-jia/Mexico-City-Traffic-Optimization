@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from mapsplotlib import mapsplot as mplt
 from utils import *
 from graph_tool.all import *
+from itertools import chain
 
 # f = open("googlemapskey.txt")
 # apikey = f.readline()[0:-1]
@@ -14,8 +15,7 @@ g.vp.coords = coords
 intersections = {}
 near_existing_vertex = 0
 
-def add_vertex(point, intersections):
-	global g
+def add_vertex(g, point, intersections):
 	v_ref = find_vertex(g, g.vp.coords, [point])
 	if len(v_ref) == 0:
 		v_new = g.add_vertex()
@@ -39,8 +39,7 @@ def average_coords(coords_list):
 		ys.append(coords[1])
 	return ([(np.mean(xs), np.mean(ys))], len(coords_list)-1)
 
-def set_new_coords(intersections):
-	global g
+def set_new_coords(g, intersections):
 	vertex_list = g.get_vertices()
 	total_new_intersections_made = 0
 	for v in vertex_list:
@@ -48,8 +47,7 @@ def set_new_coords(intersections):
 		total_new_intersections_made = total_new_intersections_made + new_intersections_made
 	return total_new_intersections_made
 
-def merge_vertices(intersections):
-	global g
+def merge_vertices(g, intersections):
 	vertex_list = g.get_vertices()
 	removed_vertex_list = set()
 	for v1 in vertex_list:
@@ -83,18 +81,59 @@ def merge_vertices(intersections):
 			intersections.pop(v1, None)
 			removed_vertex_list |= set([v1])
 	g.remove_vertex(removed_vertex_list)
-	return set_new_coords(intersections)
+	g.shrink_to_fit()
+	return set_new_coords(g, intersections)
+
+def depth_first_traversal(g, vertex, visited):
+	if vertex is not None:
+		graph = [vertex]
+		graph_size = 1
+		neighbours = chain(vertex.out_neighbors(), vertex.in_neighbors())
+		for vertex_neighbour in neighbours:
+			if vertex_neighbour not in visited:
+				visited.append(vertex_neighbour)
+				subgraph_size, subgraph = depth_first_traversal(g, vertex_neighbour, visited)
+				graph.extend(subgraph)
+				graph_size = graph_size + subgraph_size
+		return graph_size, graph
+	else:
+		return 0, []
+
+
+
+def select_largest_subgraph(g):
+	explored_vertices = []
+	vertices_to_remove = []
+	#vertex and associated subgraph size
+	max_subgraph_size = 0
+	max_subgraph_list = []
+	vertices = g.get_vertices()
+	for vertex in vertices:
+		if vertex in explored_vertices:
+			continue
+		explored_vertices.append(vertex)
+		subgraph_size, subgraph = depth_first_traversal(g, g.vertex(vertex), explored_vertices)
+		if subgraph_size > max_subgraph_size:
+			vertices_to_remove.extend(max_subgraph_list)
+			max_subgraph_list = subgraph
+			max_subgraph_size = subgraph_size
+		else:
+			vertices_to_remove.extend(subgraph)
+	for vertex in vertices_to_remove:
+		g.clear_vertex(vertex)
+	g.remove_vertex(vertices_to_remove)
+
 
 data = prep_data(pd.read_csv("2018-05-24T04.59.44.000.in", sep="\t", index_col=False, encoding="ISO-8859-1"))
 
 print(len(data))
 for entry in data:
-	start_point, is_near = add_vertex(entry["start_point"], intersections)
+	start_point, is_near = add_vertex(g, entry["start_point"], intersections)
 	near_existing_vertex = near_existing_vertex + is_near
-	end_point, is_near = add_vertex(entry["end_point"], intersections)
+	end_point, is_near = add_vertex(g, entry["end_point"], intersections)
 	near_existing_vertex = near_existing_vertex + is_near
 	g.add_edge(start_point, end_point)
-near_existing_vertex = near_existing_vertex + merge_vertices(intersections)
+near_existing_vertex = near_existing_vertex + merge_vertices(g, intersections)
 
 
 
@@ -107,10 +146,19 @@ fig1 = plt.figure()
 ax1 = fig1.add_subplot(1,1,1)
 ax1.hist(list(intersections.values()))
 dct = {'latitude': [], 'longitude': []}
+
+print(g.num_edges())
+select_largest_subgraph(g)
+print(g.num_edges())
+
 fig2 = plt.figure()
 ax2 = fig2.add_subplot(1,1,1)
 for edge in g.edges():
 	start = g.vp.coords[edge.source()][0]
 	end = g.vp.coords[edge.target()][0]
-	ax2.plot([start[0], end[0]], [start[1], end[1]], 'bo-')
+	ax2.plot([start[0], end[0]], [start[1], end[1]], 'bo', markersize=6)
+	if np.sqrt((end[0]-start[0])**2 + (end[1]-start[1])**2) > 0:
+		ax2.arrow(start[0], start[1], end[0]-start[0], end[1]-start[1], width=10, head_width = 100, length_includes_head=True)
+
+
 plt.show(block=True)
