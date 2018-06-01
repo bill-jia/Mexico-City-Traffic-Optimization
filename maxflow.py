@@ -34,7 +34,7 @@ def master_sink(g, master_source):
 
 
 
-g = TrafficGraph("2018-05-24T04.59.44.000.in")
+g = TrafficGraph("2018-05-23T23.59.44.000.in")
 master_source = master_source(g)
 master_sink = master_sink(g, master_source)
 res = edmonds_karp_max_flow(g, master_source, master_sink, g.freeflow_speed)
