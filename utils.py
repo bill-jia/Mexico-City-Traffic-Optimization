@@ -1,7 +1,10 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
+import re
+import os
+from datetime import datetime
+import glob
 
 def string_to_latlon(inp):
 	spl = inp.split(",")
@@ -50,3 +53,37 @@ def plot_graph_as_map(g):
 
 
 	plt.show(block=True)
+
+def load_data(filepath):
+	data = pd.read_csv(filepath, sep="\t", index_col=False, encoding="ISO-8859-1")
+	return data
+
+def list_files(day=None, time=None):
+	directories = ["Monday", "Sunday", "Thursday", "Wednesday"]
+	time_index = [0, 1, 2, 3]
+	if day is not None:
+		directories = [day]
+	if time is not None:
+		time_index = [time]
+	all_files = []
+	for directory in directories:
+		dir_list = [name for name in os.listdir(directory) if os.path.isdir(os.path.join(directory, name))]
+		for time in time_index:
+			file_list = glob.glob(os.path.join(directory, dir_list[time]) +"/*.txt")
+			all_files.extend(file_list)
+	return all_files
+
+def path_to_time(file_path):
+	strtime = os.path.splitext(os.path.basename(file_path))[0]
+	dt = datetime.strptime(strtime, "%Y-%m-%dT%H.%M.%S.000")
+	return dt
+
+def data_category(dt):
+	if dt.hour < 1 or dt.hour == 23:
+		return "o1"
+	elif dt.hour >=6 and dt.hour <10:
+		return "r1"
+	elif dt.hour >=11 and dt.hour < 13:
+		return "o2"
+	else:
+		return r2
