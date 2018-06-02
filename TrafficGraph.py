@@ -4,13 +4,17 @@ from utils import *
 from itertools import chain
 
 class TrafficGraph(Graph):
-	def __init__(self, filepath=None, graphpath=None):
-		if filepath is None and graphpath is None:
+	def __init__(self, filepath=None, graphpath=None, graph=None):
+		if filepath is None and graphpath is None and graph is None:
 			Graph.__init__(self)
-		elif graphpath is None:
+		elif graphpath is None and graph is None:
 			self.init_from_raw(filepath)
-		else :
-			Graph.__init__(self, g=load_graph(graphpath))
+		else:
+			if graph is None:
+				g = load_graph(graphpath)
+			else:
+				g = graph
+			Graph.__init__(self, g=g)
 			self.filename = self.gp.filename
 			self.timestamp = self.gp.timestamp
 			self.data_category = self.gp.data_category
