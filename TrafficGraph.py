@@ -4,25 +4,57 @@ from utils import *
 from itertools import chain
 
 class TrafficGraph(Graph):
-	def __init__(self, filepath):
+	def __init__(self, filepath=None, graphpath=None):
+		if filepath is None and graphpath is None:
+			Graph.__init__(self)
+		elif graphpath is None:
+			self.init_from_raw(filepath)
+		else :
+			Graph.__init__(self, g=load_graph(graphpath))
+			self.filename = self.gp.filename
+			self.timestamp = self.gp.timestamp
+			self.data_category = self.gp.data_category
+			self.temp_coords = self.vp.temp_coords
+			self.coordinates = self.vp.coordinates
+			self.is_master_node = self.vp.is_master_node
+			self.is_source = self.vp.is_source
+			self.path = self.ep.path
+			self.functional_class = self.ep.functional_class
+			self.length = self.ep.length
+			self.freeflow_speed = self.ep.freeflow_speed 
+			self.actual_speed = self.ep.actual_speed
+			self.jam_factor = self.ep.jam_factor 
+			self.is_master_edge = self.ep.is_master_edge
+			if self.ep.max_flow is None or self.ep.actual_flow is None:
+				self.max_flow = self.ep.max_flow = self.new_edge_property("float")
+				self.actual_flow = self.ep.actual_flow = self.new_edge_property("float")
+				self.save("graph_files/" + self.filename + ".gt", fmt="gt")
+
+
+	def init_from_raw(self, filepath):
 		data = pd.read_csv(filepath, sep="\t", index_col=False, encoding="ISO-8859-1")
 		data = prep_data(data)
 		Graph.__init__(self)
 
-		self.timestamp = path_to_time(filepath)
-		self.data_category = data_category(self.timestamp)
-		self.temp_coords = self.new_vertex_property("object")
-		self.coordinates = self.new_vertex_property("vector<float>")
-		self.is_master_node = self.new_vertex_property("bool")
-		self.is_source = self.new_vertex_property("bool")
-
-		self.path = self.new_edge_property("string")
-		self.functional_class = self.new_edge_property("int")
-		self.length = self.new_edge_property("float")
-		self.freeflow_speed = self.new_edge_property("float")
-		self.actual_speed = self.new_edge_property("float")
-		self.jam_factor = self.new_edge_property("float")
-		self.is_master_edge = self.new_edge_property("bool")
+		self.filename = self.gp.filename = self.new_graph_property("string")
+		self.timestamp = self.gp.timestamp = self.new_graph_property("object")
+		self.data_category = self.gp.data_category = self.new_graph_property("string")
+		self.filename[self] = raw_file_name(filepath)
+		self.timestamp[self] = path_to_time(filepath)
+		self.data_category[self] = data_category(self.timestamp[self])
+		self.temp_coords = self.vp.temp_coords = self.new_vertex_property("object")
+		self.coordinates = self.vp.coordinates = self.new_vertex_property("vector<float>")
+		self.is_master_node = self.vp.is_master_node = self.new_vertex_property("bool")
+		self.is_source = self.vp.is_source = self.new_vertex_property("bool")
+		self.path = self.ep.path = self.new_edge_property("string")
+		self.functional_class = self.ep.functional_class = self.new_edge_property("int")
+		self.length = self.ep.length = self.new_edge_property("float")
+		self.freeflow_speed = self.ep.freeflow_speed = self.new_edge_property("float")
+		self.actual_speed = self.ep.actual_speed = self.new_edge_property("float")
+		self.jam_factor = self.ep.jam_factor = self.new_edge_property("float")
+		self.is_master_edge = self.ep.is_master_edge = self.new_edge_property("bool")
+		self.max_flow = self.ep.max_flow = self.new_edge_property("float")
+		self.actual_flow = self.ep.actual_flow = self.new_edge_property("float")
 
 
 		# self.vertex_ids = {}
@@ -47,8 +79,8 @@ class TrafficGraph(Graph):
 		if len(v_ref) == 0:
 			v_new = self.add_vertex()
 			self.is_master_node[v_new] = False
-			self.is_source[v_new] = False
 			self.temp_coords[v_new] = [point]
+			self.is_source[v_new] = False
 			return v_new
 		else:
 			return v_ref[0]
@@ -92,12 +124,13 @@ class TrafficGraph(Graph):
 				for old_out_edge in old_out_edges:
 					oe = self.edge(old_out_edge[0], old_out_edge[1])
 					ne = self.add_edge(v1new, oe.target())
-					self.is_master_edge[ne] = False
+					self.transfer_edge_properties(oe, ne)
 					self.remove_edge(oe)
 				old_in_edges = self.get_in_edges(v1)
 				for old_in_edge in old_in_edges:
 					oe = self.edge(old_in_edge[0], old_in_edge[1])
 					ne = self.add_edge(oe.source(), v1new)
+					self.transfer_edge_properties(oe, ne)
 					self.is_master_edge[ne] = False
 					self.remove_edge(oe)
 				self.temp_coords[v1new].extend(self.temp_coords[v1])
@@ -105,6 +138,15 @@ class TrafficGraph(Graph):
 		self.remove_vertex(removed_vertex_list)
 		self.shrink_to_fit()
 		self.__set_new_coords()
+
+	def transfer_edge_properties(self,old_edge, new_edge):
+		self.path[new_edge] = self.path[old_edge]
+		self.functional_class[new_edge] = self.functional_class[old_edge]
+		self.length[new_edge] = self.length[old_edge]
+		self.freeflow_speed[new_edge] = self.freeflow_speed[old_edge]
+		self.actual_speed[new_edge] = self.actual_speed[old_edge]
+		self.jam_factor[new_edge] = self.jam_factor[old_edge]
+		self.is_master_edge[new_edge] = self.is_master_edge[old_edge]
 
 	def __depth_first_traversal(self, vertex, visited):
 		if vertex is not None:
