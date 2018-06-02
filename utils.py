@@ -74,10 +74,16 @@ def list_files(day=None, time=None):
 	return all_files
 
 def path_to_time(file_path):
-	strtime = os.path.splitext(os.path.basename(file_path))[0]
+	strtime = raw_file_name(file_path)
 	dt = datetime.strptime(strtime, "%Y-%m-%dT%H.%M.%S.000")
 	return dt
 
+def raw_file_name(file_path):
+	return os.path.splitext(os.path.basename(file_path))[0]
+
+def graph_path(file_path):
+	return ("graph_files/" + raw_file_name(file_path) + ".gt")
+	
 def data_category(dt):
 	if dt.hour < 1 or dt.hour == 23:
 		return "o1"
@@ -86,4 +92,4 @@ def data_category(dt):
 	elif dt.hour >=11 and dt.hour < 13:
 		return "o2"
 	else:
-		return r2
+		return "r2"

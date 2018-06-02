@@ -34,6 +34,7 @@ def master_source(g):
 		e = g.add_edge(master_source, source_vertex)
 		g.is_master_edge[e] = True
 		g.freeflow_speed[e] = 9999
+		g.actual_speed[e] = g.freeflow_speed[e]/2
 	return master_source
 
 def master_sink(g, master_source):
@@ -45,5 +46,12 @@ def master_sink(g, master_source):
 			# For now represent the leakage as a sink at every node with max flow 10km/hr
 			e = g.add_edge(vertex, master_sink)
 			g.freeflow_speed[e] = 10
+			g.actual_speed[e] = g.freeflow_speed[e]/2
 			g.is_master_edge[e] = True
 	return master_sink
+
+def draw_max_flow(g, max_flow):
+	graph_draw(g, pos=g.coordinates, vertex_color = g.is_source, edge_pen_width=prop_to_size(max_flow, mi=5, ma=50, power=0.5), output="graphs/"+ g.filename + "_max.svg")
+
+def draw_actual_flow(g):
+	graph_draw(g, pos=g.coordinates, vertex_color = g.is_source, edge_pen_width=prop_to_size(g.actual_flow, mi=5, ma=50, power=0.5), output="graphs/"+ g.filename + "_actual.svg")

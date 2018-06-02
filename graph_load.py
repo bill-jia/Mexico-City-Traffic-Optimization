@@ -11,5 +11,5 @@ def load(file):
         g=TrafficGraph(filepath=file)
         g.save("graph_files/" + g.filename[g] + ".gt", fmt="gt")
 
-p = Pool(7)
+p = Pool(8)
 p.map(load, list_files("Monday"))
