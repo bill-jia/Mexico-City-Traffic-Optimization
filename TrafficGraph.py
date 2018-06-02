@@ -9,7 +9,8 @@ class TrafficGraph(Graph):
 		data = prep_data(data)
 		Graph.__init__(self)
 
-
+		self.timestamp = path_to_time(filepath)
+		self.data_category = data_category(self.timestamp)
 		self.temp_coords = self.new_vertex_property("object")
 		self.coordinates = self.new_vertex_property("vector<float>")
 		self.is_master_node = self.new_vertex_property("bool")
