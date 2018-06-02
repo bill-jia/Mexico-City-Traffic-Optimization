@@ -25,10 +25,23 @@ class TrafficGraph(Graph):
 			self.actual_speed = self.ep.actual_speed
 			self.jam_factor = self.ep.jam_factor 
 			self.is_master_edge = self.ep.is_master_edge
-			if self.ep.max_flow is None or self.ep.actual_flow is None:
+			if "max_flow" not in self.edge_properties or "actual_flow" not in self.edge_properties:
 				self.max_flow = self.ep.max_flow = self.new_edge_property("float")
 				self.actual_flow = self.ep.actual_flow = self.new_edge_property("float")
 				self.save("graph_files/" + self.filename + ".gt", fmt="gt")
+			else:
+				self.max_flow = self.ep.max_flow
+				self.actual_flow = self.ep.actual_flow
+			if "is_master_source" not in self.vertex_properties or "is_master_sink" not in self.vertex_properties:
+				self.is_master_source = self.vp.is_master_source = self.new_vertex_property("bool")
+				self.is_master_sink = self.vp.is_master_sink = self.new_vertex_property("bool")
+				for v in self.get_vertices():
+					self.is_master_source[v] = False
+					self.is_master_sink[v] = False
+				self.save("graph_files/" + self.filename + ".gt", fmt="gt")
+			else:
+				self.is_master_source = self.vp.is_master_source
+				self.is_master_sink = self.vp.is_master_sink
 
 
 	def init_from_raw(self, filepath):
@@ -44,7 +57,8 @@ class TrafficGraph(Graph):
 		self.data_category[self] = data_category(self.timestamp[self])
 		self.temp_coords = self.vp.temp_coords = self.new_vertex_property("object")
 		self.coordinates = self.vp.coordinates = self.new_vertex_property("vector<float>")
-		self.is_master_node = self.vp.is_master_node = self.new_vertex_property("bool")
+		self.is_master_source = self.vp.is_master_source = self.new_vertex_property("bool")
+		self.is_master_sink = self.vp.is_master_sink = self.new_vertex_property("bool")
 		self.is_source = self.vp.is_source = self.new_vertex_property("bool")
 		self.path = self.ep.path = self.new_edge_property("string")
 		self.functional_class = self.ep.functional_class = self.new_edge_property("int")
@@ -78,7 +92,8 @@ class TrafficGraph(Graph):
 		v_ref = find_vertex(self, self.temp_coords, [point])
 		if len(v_ref) == 0:
 			v_new = self.add_vertex()
-			self.is_master_node[v_new] = False
+			self.is_master_source[v_new] = False
+			self.is_master_sink[v_new] = False
 			self.temp_coords[v_new] = [point]
 			self.is_source[v_new] = False
 			return v_new

@@ -26,28 +26,36 @@ def get_source_vertices(g):
 	return source_vertices
 
 def master_source(g):
-	master_source = g.add_vertex()
-	g.is_master_node[master_source] = True
-	g.coordinates[master_source] = [0,0]
-	source_vertices = get_source_vertices(g)
-	for source_vertex in source_vertices:
-		e = g.add_edge(master_source, source_vertex)
-		g.is_master_edge[e] = True
-		g.freeflow_speed[e] = 9999
-		g.actual_speed[e] = g.freeflow_speed[e]/2
+	master_sources = find_vertex(g, g.is_master_source, True)
+	if len(master_sources) == 0:
+		master_source = g.add_vertex()
+		g.is_master_source[master_source] = True
+		g.coordinates[master_source] = [0,0]
+		source_vertices = get_source_vertices(g)
+		for source_vertex in source_vertices:
+			e = g.add_edge(master_source, source_vertex)
+			g.is_master_edge[e] = True
+			g.freeflow_speed[e] = 9999
+			g.actual_speed[e] = g.freeflow_speed[e]/2
+	else:
+		master_source = master_sources[0]
 	return master_source
 
 def master_sink(g, master_source):
-	master_sink = g.add_vertex()
-	g.coordinates[master_sink] = [0,0]
-	g.is_master_node[master_sink] = True
-	for vertex in g.vertices():
-		if int(vertex) != int(master_sink) and int(vertex) != int(master_source):
-			# For now represent the leakage as a sink at every node with max flow 10km/hr
-			e = g.add_edge(vertex, master_sink)
-			g.freeflow_speed[e] = 10
-			g.actual_speed[e] = g.freeflow_speed[e]/2
-			g.is_master_edge[e] = True
+	master_sinks = find_vertex(g, g.is_master_sink, True)
+	if len(master_sinks) == 0:
+		master_sink = g.add_vertex()
+		g.coordinates[master_sink] = [0,0]
+		g.is_master_sink[master_sink] = True
+		for vertex in g.vertices():
+			if int(vertex) != int(master_sink) and int(vertex) != int(master_source):
+				# For now represent the leakage as a sink at every node with max flow 10km/hr
+				e = g.add_edge(vertex, master_sink)
+				g.freeflow_speed[e] = 10
+				g.actual_speed[e] = g.freeflow_speed[e]/2
+				g.is_master_edge[e] = True
+	else:
+		master_sink = master_sinks[0]
 	return master_sink
 
 def draw_max_flow(g, max_flow):
