@@ -12,4 +12,4 @@ def load(file):
         g.save("graph_files/" + g.filename[g] + ".gt", fmt="gt")
 
 p = Pool(7)
-p.map(load, list_files("Monday"))
+p.map(load, list_files())
