@@ -7,6 +7,7 @@ def get_source_vertices(g):
 	for vertex in g.vertices():
 		if vertex.in_degree() == 0:
 			source_vertices.append(vertex)
+			g.is_source[vertex] = True
 	return source_vertices
 
 def master_source(g):
@@ -26,9 +27,9 @@ def master_sink(g, master_source):
 	g.is_master_node[master_sink] = True
 	for vertex in g.vertices():
 		if int(vertex) != int(master_sink) and int(vertex) != int(master_source):
-			# For now represent the leakage as a sink at every node with max flow 10km/hr
+			# For now represent the leakage as a sink at every node with max flow 0.1km/hr
 			e = g.add_edge(vertex, master_sink)
-			g.freeflow_speed[e] = 10
+			g.freeflow_speed[e] = 0.1
 			g.is_master_edge[e] = True
 	return master_sink
 
@@ -41,7 +42,9 @@ res = edmonds_karp_max_flow(g, master_source, master_sink, g.freeflow_speed)
 res.a = g.freeflow_speed.a - res.a
 g.set_edge_filter(g.is_master_edge, inverted=True)
 g.set_vertex_filter(g.is_master_node, inverted=True)
-graph_draw(g, pos=g.coordinates, edge_pen_width=prop_to_size(res, mi=0, ma=100, power=1), output_size = (4000,4000), output="test_flow.png")
+graph_draw(g, pos=g.coordinates, vertex_color = g.is_source, edge_pen_width=prop_to_size(res, mi=5, ma=50, power=0.5), output_size = (4000,4000), output="max_flow.png")
+graph_draw(g, pos=g.coordinates, vertex_color = g.is_source, edge_pen_width=prop_to_size(g.actual_speed, mi=5, ma=50, power=0.5), output_size = (4000,4000), output="actual_flow.png")
+
 # fig = plt.figure()
 # ax2 = fig.add_subplot(1,1,1)
 # for edge in g.edges():

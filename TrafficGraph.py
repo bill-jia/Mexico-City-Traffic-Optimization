@@ -13,6 +13,8 @@ class TrafficGraph(Graph):
 		self.temp_coords = self.new_vertex_property("object")
 		self.coordinates = self.new_vertex_property("vector<float>")
 		self.is_master_node = self.new_vertex_property("bool")
+		self.is_source = self.new_vertex_property("bool")
+
 		self.path = self.new_edge_property("string")
 		self.functional_class = self.new_edge_property("int")
 		self.length = self.new_edge_property("float")
@@ -34,7 +36,7 @@ class TrafficGraph(Graph):
 			self.functional_class[e] = row["functional_class"]
 			self.length[e] = row["length"]
 			self.freeflow_speed[e] = row["freeflow_speed"]
-			self.actual_speed[e] = row["actual_speed"]
+			self.actual_speed[e] = min(row["actual_speed"], row["freeflow_speed"])
 			self.jam_factor[e] = row["jam_factor"]
 		self.__merge_vertices()
 		self.__select_largest_subgraph()
@@ -44,6 +46,7 @@ class TrafficGraph(Graph):
 		if len(v_ref) == 0:
 			v_new = self.add_vertex()
 			self.is_master_node[v_new] = False
+			self.is_source[v_new] = False
 			self.temp_coords[v_new] = [point]
 			return v_new
 		else:
