@@ -20,7 +20,6 @@ class TrafficGraph(Graph):
 			self.data_category = self.gp.data_category
 			self.temp_coords = self.vp.temp_coords
 			self.coordinates = self.vp.coordinates
-			self.is_master_node = self.vp.is_master_node
 			self.is_source = self.vp.is_source
 			self.path = self.ep.path
 			self.functional_class = self.ep.functional_class
@@ -36,16 +35,21 @@ class TrafficGraph(Graph):
 			else:
 				self.max_flow = self.ep.max_flow
 				self.actual_flow = self.ep.actual_flow
-			if "is_master_source" not in self.vertex_properties or "is_master_sink" not in self.vertex_properties:
+			if "is_master_source" not in self.vertex_properties or "is_master_sink" not in self.vertex_properties or "is_master_node" not in self.vertex_properties:
 				self.is_master_source = self.vp.is_master_source = self.new_vertex_property("bool")
 				self.is_master_sink = self.vp.is_master_sink = self.new_vertex_property("bool")
+				self.is_master_node = self.vp.is_master_node = self.new_vertex_property("bool")
 				for v in self.get_vertices():
 					self.is_master_source[v] = False
 					self.is_master_sink[v] = False
+					self.is_master_node[v] = False
 				self.save("graph_files/" + self.filename + ".gt", fmt="gt")
 			else:
 				self.is_master_source = self.vp.is_master_source
 				self.is_master_sink = self.vp.is_master_sink
+				self.is_master_node = self.vp.is_master_node
+		if graph is None:
+			self.__invert_y_coordinates()
 
 
 	def init_from_raw(self, filepath):
@@ -203,3 +207,7 @@ class TrafficGraph(Graph):
 		for vertex in vertices_to_remove:
 			self.clear_vertex(vertex)
 		self.remove_vertex(vertices_to_remove)
+
+	def __invert_y_coordinates(self):
+		for v in self.vertices():
+			self.coordinates[v] = [self.coordinates[v][0], -self.coordinates[v][1]]

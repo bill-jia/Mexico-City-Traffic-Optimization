@@ -111,7 +111,6 @@ def get_source_vertices(g):
 def master_source(g, SOURCE_FLOW):
 	master_sources = find_vertex(g, g.is_master_source, True)
 	if len(master_sources) == 0:
-		g.is_master_node = g.new_vertex_property("bool")
 		master_source = g.add_vertex()
 		g.is_master_node[master_source] = True
 		g.is_master_source[master_source] = True
