@@ -2,7 +2,7 @@ from utils import *
 from TrafficGraph import TrafficGraph
 from graph_tool.all import *
 
-D_CRIT = 0.09*1000
+D_CRIT = 0.25*1000
 V_FF = 40
 MAX_LANES = 6
 SINK_MAX_FLOW = 10
@@ -206,3 +206,94 @@ def apply_without_masters(func, g, *args, **kwargs):
 	g.set_edge_filter(None)
 	g.set_vertex_filter(None)
 	return output
+
+def reconstruct_graph_from_leak(leak_graph, maxflow):
+	reconst = TrafficGraph(graph=leak_graph)
+	reconst.sinkage = reconst.new_vertex_property("float")
+	reconst.leakage = reconst.new_edge_property("float")
+	reconst.inflow = reconst.new_vertex_property("float")
+	msink = find_vertex(reconst, reconst.is_master_sink, True)[0]
+	intermediate_vertices = []
+	for v in find_vertex(reconst, reconst.is_master_node, False):
+		reconst.sinkage[v] = 0
+		reconst.inflow[v] = 0
+		for edge in reconst.get_out_edges(v):
+			e1 = reconst.edge(edge[0], edge[1])
+			e1old = leak_graph.edge(edge[0], edge[1])
+			if reconst.is_master_node[e1.target()] and not reconst.is_master_sink[e1.target()]:
+				v_intermediate = e1.target()
+				intermediate_vertices.append(v_intermediate)
+				e2 = None
+				leakage = 0
+				for e2s in v_intermediate.out_edges():
+					if e2s.target() != msink:
+						e2 = e2s
+					else:
+						leakage = maxflow[e2s]
+				reconst.sinkage[v] += leakage
+				e_reconst = reconst.add_edge(v, e2.target())
+				reconst.transfer_edge_properties(e1, e_reconst)
+				reconst.is_master_edge[e_reconst] = False
+				reconst.max_flow[e_reconst] = maxflow[e1old]
+				reconst.leakage[e_reconst] = leakage
+	reconst.remove_vertex(intermediate_vertices)
+	for v in find_vertex(reconst, reconst.is_master_sink, False):
+		for e in v.in_edges():
+			reconst.inflow[v] = reconst.max_flow[e] - reconst.leakage[e]
+	return reconst
+
+# Sink flow equation
+def add_leak_nodes(g,k):
+	msink = find_vertex(g, g.is_master_sink, True)[0]
+	for v in find_vertex(g, g.is_master_node, False):
+		for edge in g.get_out_edges(v):
+			e = g.edge(edge[0], edge[1])
+			if e.target() != msink:
+				v_intermediate = g.add_vertex()
+				e1 = g.add_edge(v, v_intermediate)
+				e2 = g.add_edge(v_intermediate, e.target())
+				g.transfer_edge_properties(e, e1)
+				g.transfer_edge_properties(e, e2)
+				g.length[e2] = 0
+				eleak = g.add_edge(v_intermediate, msink)
+				g.max_flow[eleak] = g.length[e]*k*g.max_flow[e]
+				g.is_master_edge[e1] = g.is_master_edge[e2] = g.is_master_edge[eleak] = True
+				g.is_master_node[v_intermediate] = True
+				g.remove_edge(e)
+			else:
+				g.remove_edge(e)
+			
+
+def get_leak_graph(g, k):
+	leak_graph = TrafficGraph(graph=g)
+	add_leak_nodes(leak_graph, k)
+	return leak_graph
+
+def rank_property(g, prop, number, include_sources=True):
+	vertices_by_prop = []
+	if include_sources:
+		vertices = g.vertices()
+	else:
+		vertices = find_vertex(g, g.is_source, False)
+	for vertex in vertices:
+		if not g.is_master_node[vertex]:
+			vertices_by_prop.append((vertex, prop[vertex]))
+	vertices_prop_sorted = sorted(vertices_by_prop, key=lambda v: v[1], reverse = True)
+	top_vertices = g.new_vertex_property("bool")
+	for idx, vertex in enumerate(vertices_prop_sorted):
+		if idx < number:
+			top_vertices[vertex[0]] = True
+		else:
+			top_vertices[vertex[0]] = False
+	return top_vertices, vertices_prop_sorted[0:number]
+
+def prop_as_string(g, isvertex, prop):
+	if isvertex:
+		newprop = g.new_vertex_property("string")
+		for v in g.vertices():
+			newprop[v] = "%d" %prop[v]
+	else:
+		newprop = g.new_edge_property("string")
+		for v in g.edges():
+			newprop[v] = "%d" %prop[v]
+	return newprop

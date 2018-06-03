@@ -170,7 +170,8 @@ class TrafficGraph(Graph):
 		self.actual_speed[new_edge] = self.actual_speed[old_edge]
 		self.jam_factor[new_edge] = self.jam_factor[old_edge]
 		self.is_master_edge[new_edge] = self.is_master_edge[old_edge]
-
+		self.max_flow[new_edge] = self.max_flow[old_edge]
+		self.actual_flow[new_edge] = self.actual_flow[old_edge]
 	def __depth_first_traversal(self, vertex, visited):
 		if vertex is not None:
 			graph = [vertex]
@@ -182,6 +183,7 @@ class TrafficGraph(Graph):
 					subgraph_size, subgraph = self.__depth_first_traversal(vertex_neighbour, visited)
 					graph.extend(subgraph)
 					graph_size = graph_size + subgraph_size
+					
 			return graph_size, graph
 		else:
 			return 0, []
