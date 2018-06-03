@@ -139,13 +139,15 @@ def master_source(g, SOURCE_FLOW):
 			g.actual_speed[e] = 0
 			g.functional_class[e] = 1
 			g.length[e] = 0
-			g.max_flow[e] = g.actual_flow[e] = SOURCE_FLOW
+			g.max_flow[e] = SOURCE_FLOW
+			g.actual_flow[e] = 0
 		else:
 			g.freeflow_speed[e] = 0
 			g.actual_speed[e] = 0
 			g.functional_class[e] = 1
 			g.length[e] = 0
-			g.max_flow[e] = g.actual_flow[e] = SOURCE_FLOW
+			g.max_flow[e] = SOURCE_FLOW
+			g.actual_flow[e] = 0
 	return master_source
 
 def master_sink(g, master_source, SINK_FLOW):
@@ -178,18 +180,25 @@ def master_sink(g, master_source, SINK_FLOW):
 			g.max_flow[e] = g.actual_flow[e] = SINK_FLOW
 	return master_sink
 
-def set_sinks(g, vertices, SINK_FLOW):
+def set_sink_max_flow(g, vertices, SINK_FLOW):
 	master_sink = find_vertex(g, g.is_master_sink, True)[0]
 	for vertex in vertices:
-		if not g.is_source[vertex]:
+		if not g.is_master_node[vertex] and not g.is_source[vertex]:
 			e = g.edge(vertex, master_sink)
 			g.max_flow[e] = SINK_FLOW
 
+def set_sink_actual_flow(g, vertices, SINK_FLOW):
+	master_sink = find_vertex(g, g.is_master_sink, True)[0]
+	for vertex in vertices:
+		if not g.is_master_node[vertex] and not g.is_source[vertex]:
+			e = g.edge(vertex, master_sink)
+			g.max_actual_flow[e] = SINK_FLOW
+
 def draw_max_flow(g, max_flow):
-	graph_draw(g, pos=g.coordinates, vertex_color = g.is_source, edge_pen_width=prop_to_size(max_flow, mi=5, ma=50, power=0.5), output_size = (4000,4000), output="graphs/"+ g.filename + "_max.png")
+	graph_draw(g, pos=g.coordinates, vertex_fill_color = g.is_source, edge_pen_width=prop_to_size(max_flow, mi=5, ma=50, power=0.5), output_size = (4000,4000), output="plots/"+ g.filename + "_max.png")
 
 def draw_actual_flow(g):
-	graph_draw(g, pos=g.coordinates, vertex_color = g.is_source, edge_pen_width=prop_to_size(g.actual_flow, mi=5, ma=50, power=0.5), output_size = (4000,4000), output="graphs/"+ g.filename + "_actual.png")
+	graph_draw(g, pos=g.coordinates, vertex_fill_color = g.is_source, edge_pen_width=prop_to_size(g.actual_flow, mi=5, ma=50, power=0.5), output_size = (4000,4000), output="plots/"+ g.filename + "_actual.png")
 
 def apply_without_masters(func, g, *args, **kwargs):
 	g.set_edge_filter(g.is_master_edge, inverted=True)
