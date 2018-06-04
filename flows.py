@@ -2,7 +2,7 @@ from utils import *
 from TrafficGraph import TrafficGraph
 from graph_tool.all import *
 
-D_CRIT = 0.25*1000
+D_CRIT = 0.09*1000
 V_FF = 40
 MAX_LANES = 6
 SINK_MAX_FLOW = 10
@@ -239,11 +239,11 @@ def reconstruct_graph_from_leak(leak_graph, maxflow):
 	reconst.remove_vertex(intermediate_vertices)
 	for v in find_vertex(reconst, reconst.is_master_sink, False):
 		for e in v.in_edges():
-			reconst.inflow[v] = reconst.max_flow[e] - reconst.leakage[e]
+			reconst.inflow[v] += reconst.max_flow[e] - reconst.leakage[e]
 	return reconst
 
 # Sink flow equation
-def add_leak_nodes(g,k):
+def add_leak_nodes(g,k, use_actual = False):
 	msink = find_vertex(g, g.is_master_sink, True)[0]
 	for v in find_vertex(g, g.is_master_node, False):
 		for edge in g.get_out_edges(v):
@@ -256,7 +256,10 @@ def add_leak_nodes(g,k):
 				g.transfer_edge_properties(e, e2)
 				g.length[e2] = 0
 				eleak = g.add_edge(v_intermediate, msink)
-				g.max_flow[eleak] = g.length[e]*k*g.max_flow[e]
+				if use_actual:
+					g.max_flow[eleak] = g.length[e]*k*g.actual_flow[e]
+				else:
+					g.max_flow[eleak] = g.length[e]*k*g.max_flow[e]
 				g.is_master_edge[e1] = g.is_master_edge[e2] = g.is_master_edge[eleak] = True
 				g.is_master_node[v_intermediate] = True
 				g.remove_edge(e)
@@ -264,9 +267,9 @@ def add_leak_nodes(g,k):
 				g.remove_edge(e)
 			
 
-def get_leak_graph(g, k):
+def get_leak_graph(g, k, use_actual = False):
 	leak_graph = TrafficGraph(graph=g)
-	add_leak_nodes(leak_graph, k)
+	add_leak_nodes(leak_graph, k, use_actual)
 	return leak_graph
 
 def rank_property(g, prop, number, include_sources=True):
