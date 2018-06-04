@@ -243,7 +243,7 @@ def reconstruct_graph_from_leak(leak_graph, maxflow):
 	return reconst
 
 # Sink flow equation
-def add_leak_nodes(g,k, use_actual = False):
+def add_leak_nodes(g,k, c, use_actual = False):
 	msink = find_vertex(g, g.is_master_sink, True)[0]
 	for v in find_vertex(g, g.is_master_node, False):
 		for edge in g.get_out_edges(v):
@@ -257,9 +257,9 @@ def add_leak_nodes(g,k, use_actual = False):
 				g.length[e2] = 0
 				eleak = g.add_edge(v_intermediate, msink)
 				if use_actual:
-					g.max_flow[eleak] = g.length[e]*k*g.actual_flow[e]
+					g.max_flow[eleak] = g.length[e]*(k*g.actual_flow[e] +c)
 				else:
-					g.max_flow[eleak] = g.length[e]*k*g.max_flow[e]
+					g.max_flow[eleak] = g.length[e]*k*(g.max_flow[e] +c)
 				g.is_master_edge[e1] = g.is_master_edge[e2] = g.is_master_edge[eleak] = True
 				g.is_master_node[v_intermediate] = True
 				g.remove_edge(e)
@@ -267,9 +267,9 @@ def add_leak_nodes(g,k, use_actual = False):
 				g.remove_edge(e)
 			
 
-def get_leak_graph(g, k, use_actual = False):
+def get_leak_graph(g, k, c=0, use_actual = False):
 	leak_graph = TrafficGraph(graph=g)
-	add_leak_nodes(leak_graph, k, use_actual)
+	add_leak_nodes(leak_graph, k, c, use_actual)
 	return leak_graph
 
 def rank_property(g, prop, number, include_sources=True):
